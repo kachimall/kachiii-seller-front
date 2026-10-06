@@ -32,7 +32,9 @@ export function AuthGuard({ children, requireStore = false }: { children: ReactN
   useEffect(() => {
     if (!hydrated) return;
     if (!token) {
-      router.replace(pathname === "/" ? "/login" : `/login?next=${encodeURIComponent(pathname)}`);
+      // Keep the query too: the agreement link carries its ?token.
+      const here = pathname + window.location.search;
+      router.replace(here === "/" ? "/login" : `/login?next=${encodeURIComponent(here)}`);
     } else if (twoFactorSetupRequired) {
       router.replace("/two-factor");
     } else if (requireStore && user && isVendor(user) && !hasStore(user)) {

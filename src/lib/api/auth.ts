@@ -19,7 +19,8 @@ export function twoFactorChallenge(challengeToken: string, answer: { code: strin
   });
 }
 
-export const me = () => api<User>("/auth/me");
+/** The signed-in account with its `vendor`, which the login and 2FA answers leave out. */
+export const me = (token?: string) => api<User>("/auth/me", { token, skipAuthHandling: Boolean(token) });
 export const refresh = () => api<{ token: string; expires_at: string }>("/auth/refresh", { method: "POST" });
 export const logout = (token?: string) =>
   api<null>("/auth/logout", { method: "POST", skipAuthHandling: true, token });

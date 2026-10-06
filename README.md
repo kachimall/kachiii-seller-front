@@ -1,33 +1,39 @@
-# KACHI Admin
+# KACHI Seller Centre
 
-Back office for the KACHI marketplace. It talks to the Laravel API's admin portal
-(`backend/kachi`, Docker, port 8002) with Sanctum bearer tokens.
+Where vendors run their store on the KACHI marketplace: sign up with business documents, accept the
+vendor agreement, then manage products, stock, orders and returns. It talks to the Laravel API's
+Seller Centre portal (`backend/kachi`, Docker, port 8001) with Sanctum bearer tokens.
 
 ## Run it
 
 ```bash
-cp .env.example .env.local   # NEXT_PUBLIC_ADMIN_API_URL=http://localhost:8002/api/v1
+cp .env.example .env.local   # NEXT_PUBLIC_SELLER_API_URL=http://localhost:8001/api/v1
 npm install
-npm run dev                  # http://localhost:3001
+npm run dev                  # http://localhost:3002
 ```
 
-`npm run build && npm start` serves the production build on port 3001.
+`npm run build && npm start` serves the production build on port 3002.
 
-Sign in with a staff account (seeded: `superadmin@kachi.test` / `password`). Accounts that must use
-two-factor authentication (the Super Admin, and any role with finance access) are sent to a setup
-screen first; add the key to an authenticator app and confirm a code.
+Sign in with a vendor account (seeded: `demo.vendor@kachi.test` / `password`), or register a new store at
+`/register`.
+
+| Variable | What it is |
+| --- | --- |
+| `NEXT_PUBLIC_SELLER_API_URL` | The Seller Centre portal (local `:8001`, live `https://seller-api.kachiii.com/api/v1`) |
+| `NEXT_PUBLIC_SHOP_API_URL` | The shop portal, read for the public category and brand lists (the Seller Centre does not serve them) |
+| `NEXT_PUBLIC_SHOP_URL` | The storefront, for "view in shop" links |
 
 ## How it is put together
 
 - `src/lib/api/client.ts`: fetch wrapper. Adds the bearer token, unwraps the `{success, message, data, meta}`
-  envelope, throws `ApiError` (status + field errors). 401 clears the session; 403 with `errors.two_factor`
-  sends the user to `/two-factor`. No cookies (`credentials` is never sent).
-- `src/lib/api/<area>.ts`: one module per API area. `src/types/api.ts`: types from `GET /docs/admin.json`,
-  corrected where the live API differs (see comments).
-- `src/store/auth.ts`: zustand store persisted to localStorage (token, expiry, user). `useCan()` checks the
-  user's `permissions` to hide navigation and actions; the API still enforces them.
-- `src/components/layout/auth-guard.tsx`: client-side guard for the `(dashboard)` routes. Re-reads `/auth/me`
-  once per session and rotates the 12-hour token in its last hour.
-- `src/lib/schemas/*`: zod schemas mirroring the backend's form requests; 422 errors from the API are mapped
-  back onto the form fields.
+  envelope, throws `ApiError` (status + field errors). 401 clears the session. `shopApi()` reads the shop
+  portal's public catalogue without a token: each portal only accepts tokens it issued.
+- `src/lib/api/<area>.ts`: one module per API area; types in `src/types/`.
+- `src/store/auth.ts`: zustand store persisted to localStorage (token, expiry, user). `isVendor()` is any account
+  with a vendor application; `hasStore()` is an approved (or suspended, read-only) vendor.
+- `src/components/layout/auth-guard.tsx`: client-side guard. Accounts without a vendor application are signed
+  out; with `requireStore` (the dashboard), applicants whose store is not open yet go to `/application`.
+  It rotates the 7-day token in its last day.
+- Route groups: `(auth)` login, register and two-factor; `(onboarding)` the application and the agreement;
+  `(dashboard)` everything that needs an open store.
 - Data pages are client components (the token lives in the browser). List filters live in the URL.

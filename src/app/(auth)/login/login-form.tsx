@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { NOT_VENDOR_MESSAGE } from "@/components/layout/auth-guard";
-import { login, logout, twoFactorChallenge } from "@/lib/api/auth";
+import { login, logout, me, twoFactorChallenge } from "@/lib/api/auth";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import {
   loginSchema,
@@ -39,7 +39,10 @@ export function LoginForm() {
     if (hydrated && token) router.replace(next);
   }, [hydrated, token, next, router]);
 
-  async function finish(result: TokenResult) {
+  async function finish(signedIn: TokenResult) {
+    // The login answer's user has no `vendor`; /auth/me has it.
+    const user = await me(signedIn.token).catch(() => signedIn.user);
+    const result = { ...signedIn, user };
     if (!isVendor(result.user)) {
       // Revoke the token again: it is no use here.
       await logout(result.token).catch(() => {});
@@ -48,7 +51,7 @@ export function LoginForm() {
       return;
     }
     useAuth.getState().setSession(result);
-    router.replace(needsTwoFactorSetup(result.user) ? "/two-factor" : hasStore(result.user) ? next : "/application");
+    router.replace(needsTwoFactorSetup(result.user) ? "/two-factor" : hasStore(result.user) || isOnboarding(next) ? next : "/application");
   }
 
   return (
@@ -287,6 +290,11 @@ function RecoveryForm({ challengeToken, onDone, onRestart, onSwitch }: StepProps
 }
 
 /** Only same-site paths, so ?next= cannot send people elsewhere. */
+/** Pages an applicant may open before the store is approved. */
+function isOnboarding(path: string): boolean {
+  return /^\/(application|agreement)(\/|\?|$)/.test(path);
+}
+
 function safeNext(value: string | null): string {
   if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/login")) return "/";
   return value;
