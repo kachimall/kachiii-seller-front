@@ -1,0 +1,198 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Kachi design tokens (see DESIGN.md from the design handoff). */
+@theme {
+  --color-surface: #f7f9fc;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f2f4f7;
+  --color-surface-container: #eceef1;
+  --color-surface-container-high: #e6e8eb;
+  --color-surface-container-highest: #e0e3e6;
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #5c3f45;
+  --color-outline: #906e75;
+  --color-outline-variant: #e5bcc4;
+
+  --color-primary-container: #e4006c;
+  --color-primary-fixed: #ffd9e0;
+  --color-on-primary-fixed-variant: #8f0041;
+
+  --color-secondary-container: #0052fe;
+  --color-on-secondary-container: #dfe3ff;
+  --color-secondary-fixed: #dde1ff;
+
+  --color-tertiary: #874f00;
+  --color-tertiary-container: #a96400;
+  --color-tertiary-fixed: #ffdcbd;
+  --color-on-tertiary-fixed: #2c1600;
+  --color-star: #ff9900;
+
+  --color-success: #0f8a4f;
+  --color-error: #ba1a1a;
+
+  --text-headline-xl: 36px;
+  --text-headline-xl--line-height: 44px;
+  --text-headline-xl--font-weight: 800;
+  --text-headline-xl-mobile: 26px;
+  --text-headline-xl-mobile--line-height: 32px;
+  --text-headline-xl-mobile--font-weight: 800;
+  --text-headline-lg: 28px;
+  --text-headline-lg--line-height: 36px;
+  --text-headline-lg--font-weight: 700;
+  --text-headline-lg-mobile: 22px;
+  --text-headline-lg-mobile--line-height: 28px;
+  --text-headline-lg-mobile--font-weight: 700;
+  --text-headline-md: 20px;
+  --text-headline-md--line-height: 26px;
+  --text-headline-md--font-weight: 700;
+  --text-headline-sm: 16px;
+  --text-headline-sm--line-height: 22px;
+  --text-headline-sm--font-weight: 700;
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 24px;
+  --text-body-md: 14px;
+  --text-body-md--line-height: 20px;
+  --text-body-sm: 12px;
+  --text-body-sm--line-height: 16px;
+  --text-price-hero: 24px;
+  --text-price-hero--line-height: 28px;
+  --text-price-hero--font-weight: 800;
+  --text-price-card: 16px;
+  --text-price-card--line-height: 20px;
+  --text-price-card--font-weight: 700;
+  --text-label-md: 12px;
+  --text-label-md--line-height: 16px;
+  --text-label-md--font-weight: 600;
+  --text-label-xs: 10px;
+  --text-label-xs--line-height: 12px;
+  --text-label-xs--font-weight: 700;
+
+  --shadow-card: 0 1px 3px rgb(0 0 0 / 0.04), 0 1px 2px rgb(0 0 0 / 0.02);
+  --shadow-card-hover: 0 4px 12px rgb(0 82 255 / 0.08);
+  --shadow-float: 0 -2px 10px rgb(0 0 0 / 0.06);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-jakarta);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
+  --radius-3xl: calc(var(--radius) * 3);
+  --radius-4xl: calc(var(--radius) * 4);
+}
+
+:root {
+  --background: #f7f9fc;
+  --foreground: #191c1e;
+  --card: #ffffff;
+  --card-foreground: #191c1e;
+  --popover: #ffffff;
+  --popover-foreground: #191c1e;
+  --primary: #b60055;
+  --primary-foreground: #ffffff;
+  --secondary: #003ec6;
+  --secondary-foreground: #ffffff;
+  --muted: #f2f4f7;
+  --muted-foreground: #5c3f45;
+  --accent: #eceef1;
+  --accent-foreground: #191c1e;
+  --destructive: #ba1a1a;
+  --border: #e2e8f0;
+  --input: #e0e3e6;
+  --ring: #0052fe;
+  --radius: 0.5rem;
+}
+
+/* Dark theme: next-themes puts `.dark` on <html>. The Kachi tokens from @theme are
+   plain CSS variables, so overriding them here re-colors every utility that uses them. */
+.dark {
+  --color-surface: #111316;
+  --color-surface-container-lowest: #0c0e11;
+  --color-surface-container-low: #191c1f;
+  --color-surface-container: #1d2023;
+  --color-surface-container-high: #272a2d;
+  --color-surface-container-highest: #323538;
+  --color-on-surface: #e1e2e6;
+  --color-on-surface-variant: #d9bfc5;
+  --color-outline: #a1898f;
+  --color-outline-variant: #574046;
+
+  --color-primary-fixed: #4a1029;
+  --color-on-primary-fixed-variant: #ffb1c4;
+
+  --color-secondary-fixed: #1a2a66;
+
+  --color-tertiary: #ffb86e;
+  --color-tertiary-fixed: #4a2a00;
+  --color-on-tertiary-fixed: #ffdcbd;
+
+  --color-success: #5cd394;
+  --color-error: #ffb4ab;
+
+  --shadow-card: 0 1px 3px rgb(0 0 0 / 0.4), 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-card-hover: 0 4px 12px rgb(0 0 0 / 0.5);
+  --shadow-float: 0 -2px 10px rgb(0 0 0 / 0.5);
+
+  --background: #111316;
+  --foreground: #e1e2e6;
+  --card: #1a1d21;
+  --card-foreground: #e1e2e6;
+  --popover: #1f2226;
+  --popover-foreground: #e1e2e6;
+  --primary: #e4006c;
+  --primary-foreground: #ffffff;
+  --secondary: #3d74ff;
+  --secondary-foreground: #ffffff;
+  --muted: #23262a;
+  --muted-foreground: #a9adb4;
+  --accent: #2a2d31;
+  --accent-foreground: #e1e2e6;
+  --destructive: #f2554a;
+  --border: #2c3036;
+  --input: #363a40;
+  --ring: #5b8cff;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
