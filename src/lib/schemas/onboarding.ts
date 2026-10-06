@@ -32,15 +32,25 @@ export function businessTypeLabel(value: BusinessType): string {
 // Shared rules (the API's UaePhone and TRN rules)
 // ---------------------------------------------------------------------------
 
-const UAE_PHONE = /^\+971(5\d{8}|[234679]\d{7})$/;
-export const UAE_PHONE_MESSAGE = "Enter a UAE mobile or landline number, e.g. 050 123 4567.";
+// UaePhone takes UAE mobiles and landlines, and on a test server Philippine mobiles too
+// (ALLOW_PH_PHONES, DECISIONS OPS8; never in production). The client cannot tell which server it
+// talks to, so it lets both through and the API's 422 (shown on the field) decides.
+const PHONE = /^\+(?:971(?:5\d{8}|[234679]\d{7})|639\d{9})$/;
+export const PHONE_MESSAGE = "Enter a UAE mobile or landline number, e.g. 050 123 4567.";
 
-/** 050…, 97150…, 0097150… and +971 050… are one number, as UaePhone::normalise reads them. */
-export function normaliseUaePhone(value: string): string {
-  return value.replace(/[\s().-]/g, "").replace(/^(?:(?:\+|00)?971)?0?(5\d{8}|[234679]\d{7})$/, "+971$1");
+/**
+ * 050…, 97150…, 0097150… and +971 050… are one number, as UaePhone::normalise reads them; so are
+ * 0917…, 63917… and +63 917… (Philippine mobiles). Anything else comes back without its spacing.
+ */
+export function normalisePhone(value: string): string {
+  const phone = value.replace(/[\s().-]/g, "");
+  const uae = /^(?:(?:\+|00)?971)?0?(5\d{8}|[234679]\d{7})$/.exec(phone);
+  if (uae) return `+971${uae[1]}`;
+  const ph = /^(?:(?:\+|00)?63)?0?(9\d{9})$/.exec(phone);
+  return ph ? `+63${ph[1]}` : phone;
 }
 
-export const isUaePhone = (value: string) => UAE_PHONE.test(normaliseUaePhone(value));
+export const isPhone = (value: string) => PHONE.test(normalisePhone(value));
 
 /** A TRN is often written in groups; only the digits count. */
 export const normaliseTrn = (value: string) => value.replace(/[\s-]/g, "");
@@ -86,7 +96,7 @@ export const registerSchema = z
   .object({
     name: z.string().trim().min(1, "Enter your name.").max(255),
     email: z.email("Enter a valid email address.").max(255),
-    phone: z.string().refine((v) => v.trim() === "" || isUaePhone(v), UAE_PHONE_MESSAGE),
+    phone: z.string().refine((v) => v.trim() === "" || isPhone(v), PHONE_MESSAGE),
     password: z.string().min(8, "Use at least 8 characters."),
     password_confirmation: z.string(),
 
@@ -102,7 +112,7 @@ export const registerSchema = z
     business_type: z.enum(BUSINESS_TYPES, "Choose the business type."),
     is_vat_registered: z.boolean(),
     tax_id: z.string(),
-    contact_phone: z.string().refine(isUaePhone, UAE_PHONE_MESSAGE),
+    contact_phone: z.string().refine(isPhone, PHONE_MESSAGE),
     contact_email: optionalEmail,
 
     documents: z
@@ -143,7 +153,7 @@ export const applicationSchema = z.object({
   business_type: z.enum(BUSINESS_TYPES, "Choose the business type."),
   is_vat_registered: z.boolean(),
   tax_id: z.string().refine((v) => v.trim() === "" || isTrn(v), TRN_MESSAGE),
-  contact_phone: z.string().refine(isUaePhone, UAE_PHONE_MESSAGE),
+  contact_phone: z.string().refine(isPhone, PHONE_MESSAGE),
   contact_email: optionalEmail,
 });
 

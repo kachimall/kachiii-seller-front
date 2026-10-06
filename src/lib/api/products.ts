@@ -47,10 +47,20 @@ export const listAttributes = () => api<CatalogAttribute[]>("/vendor/attributes"
 // Images
 // ---------------------------------------------------------------------------
 
-/** 202: the image is processing; it turns ready (or failed) once the media queue runs. */
-export function uploadProductImage(productId: string, file: File, altText?: string | null) {
+/**
+ * 202: the image is processing; it turns ready (or failed) once the media queue runs. Send a file,
+ * or an https:// address (image_url, DECISIONS S10) that KACHI downloads in the request (up to 5 MB,
+ * 15 seconds, one at a time per account); a bad address is a 422 on image_url.
+ */
+export function uploadProductImage(productId: string, image: File | string, altText?: string | null) {
+  if (typeof image === "string") {
+    return api<ProductImage>(`${base(productId)}/images`, {
+      method: "POST",
+      body: { image_url: image, ...(altText ? { alt_text: altText } : {}) },
+    });
+  }
   const body = new FormData();
-  body.append("image", file);
+  body.append("image", image);
   if (altText) body.append("alt_text", altText);
   return api<ProductImage>(`${base(productId)}/images`, { method: "POST", body });
 }

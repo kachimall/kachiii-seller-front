@@ -12,15 +12,18 @@ import {
   StoreIcon,
   TruckIcon,
   Undo2Icon,
+  WalletIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { PageHeader } from "@/components/common/page-header";
 import { StatusBadge } from "@/components/common/status-badge";
 import { useApi } from "@/hooks/use-api";
 import { apiList, errorMessage } from "@/lib/api/client";
+import { EARNINGS_PERMISSIONS, getEarningsSummary } from "@/lib/api/earnings";
 import { listOrders } from "@/lib/api/orders";
 import { listReturns } from "@/lib/api/returns";
 import { getStore } from "@/lib/api/store";
+import { formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useAuth, useCan } from "@/store/auth";
 import type { LowStockItem, ReturnRequest, SellerOrder } from "@/types/sales";
@@ -79,6 +82,7 @@ export function Overview() {
           </>
         )}
         {can("inventory.manage") && <LowStockCard />}
+        {can(EARNINGS_PERMISSIONS) && <EarningsCard />}
       </div>
     </>
   );
@@ -228,6 +232,16 @@ function LowStockCard() {
         : emptiest
           ? `Lowest: ${emptiest.product?.name ?? emptiest.variant?.sku ?? "a variant"} (${emptiest.available} left)`
           : null}
+    </StatCard>
+  );
+}
+
+function EarningsCard() {
+  const { data, error } = useApi("overview:earnings", getEarningsSummary);
+
+  return (
+    <StatCard href="/earnings" icon={WalletIcon} title="Available earnings" value={data ? formatMoney(data.available) : "…"} error={error}>
+      {data && (data.pending === "0.00" ? "Counts towards your next payout." : `${formatMoney(data.pending)} more once the return period ends.`)}
     </StatCard>
   );
 }

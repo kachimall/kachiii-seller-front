@@ -4,6 +4,7 @@ import {
   AlertTriangleIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
+  LinkIcon,
   Loader2Icon,
   PencilIcon,
   StarIcon,
@@ -13,6 +14,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { ImageUrlDialog } from "@/components/common/image-url-dialog";
 import { Section } from "@/components/common/section";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -53,6 +55,7 @@ export function ImagesSection({ product, onChange, onReload, canManage }: Produc
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<ProductImage | null>(null);
   const [deleting, setDeleting] = useState<ProductImage | null>(null);
+  const [byUrl, setByUrl] = useState(false);
   const [polls, setPolls] = useState(0);
   const processing = images.some((i) => i.status === "processing");
   const room = MAX_IMAGES - images.length;
@@ -146,6 +149,10 @@ export function ImagesSection({ product, onChange, onReload, canManage }: Produc
             <Button size="sm" variant="outline" disabled={room <= 0 || upload !== null} onClick={() => input.current?.click()}>
               {upload ? <Loader2Icon className="animate-spin" /> : <UploadIcon />}
               {upload ? `Uploading ${Math.min(upload.done + 1, upload.total)} of ${upload.total}` : "Upload images"}
+            </Button>
+            <Button size="sm" variant="outline" disabled={room <= 0 || upload !== null} onClick={() => setByUrl(true)}>
+              <LinkIcon />
+              From a web address
             </Button>
           </>
         )
@@ -254,6 +261,21 @@ export function ImagesSection({ product, onChange, onReload, canManage }: Produc
           }}
         />
       )}
+
+      <ImageUrlDialog
+        open={byUrl}
+        onOpenChange={setByUrl}
+        title="Add an image from a web address"
+        description="Paste the https:// address of a picture already online, e.g. on your own website. KACHI downloads it and checks it like an upload."
+        hint="JPG, PNG or WebP, up to 5 MB, 500–5000 px."
+        withAltText
+        onSubmit={async (url, alt) => {
+          await uploadProductImage(product.id, url, alt);
+          toast.success("Image added. It is being processed.");
+          setPolls(0);
+          onReload();
+        }}
+      />
 
       <ConfirmDialog
         open={deleting !== null}

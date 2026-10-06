@@ -25,7 +25,8 @@ import type { OwnStore, StoreImageKind } from "@/types/store";
 import { Notice } from "../orders/_components/notice";
 import { BrandingField } from "./_components/branding-field";
 
-// UpdateStoreRequest. The phone is normalised and checked by the API (a UAE number).
+// UpdateStoreRequest. The phone is normalised and checked by the API (UaePhone: a UAE number, or
+// a Philippine mobile on a test server); its 422 shows on the field.
 const profileSchema = z.object({
   name: z.string().trim().min(3, "Use at least 3 characters.").max(120, "Keep it under 120 characters."),
   description: z.string().max(2000, "Keep it under 2000 characters."),
@@ -67,8 +68,8 @@ function StoreView({ store, onChange }: { store: OwnStore; onChange: (store: Own
   // A suspended vendor is read-only: the API refuses every change outside vendor/orders.
   const suspended = useAuth((s) => s.user?.vendor?.status === "suspended");
 
-  async function upload(kind: StoreImageKind, file: File) {
-    onChange(await uploadStoreImage(kind, file));
+  async function upload(kind: StoreImageKind, image: File | string) {
+    onChange(await uploadStoreImage(kind, image));
   }
 
   async function remove(kind: StoreImageKind) {
@@ -103,7 +104,7 @@ function StoreView({ store, onChange }: { store: OwnStore; onChange: (store: Own
                   kind="logo"
                   url={store.logo_url}
                   disabled={suspended}
-                  onUpload={(file) => upload("logo", file)}
+                  onUpload={(image) => upload("logo", image)}
                   onRemove={() => remove("logo")}
                 />
               </div>
@@ -113,7 +114,7 @@ function StoreView({ store, onChange }: { store: OwnStore; onChange: (store: Own
                   kind="banner"
                   url={store.banner_url}
                   disabled={suspended}
-                  onUpload={(file) => upload("banner", file)}
+                  onUpload={(image) => upload("banner", image)}
                   onRemove={() => remove("banner")}
                 />
               </div>

@@ -13,7 +13,7 @@ export interface StoreProfileInput {
   /** Up to 2000 characters. */
   description?: string | null;
   contact_email?: string | null;
-  /** A UAE number; the API normalises 050…, 97150… and +971 050… to +971…. */
+  /** A UAE number (or a PH mobile on a test server); the API normalises 050…, 97150… and +971 050… to +971…. */
   contact_phone?: string | null;
   /** Up to 5000 characters. */
   policies?: string | null;

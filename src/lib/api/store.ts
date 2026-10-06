@@ -10,10 +10,16 @@ export const updateStore = (body: StoreProfileInput) => api<OwnStore>("/vendor/s
 export const setStoreStatus = (status: StoreOpenStatus) =>
   api<OwnStore>("/vendor/store/status", { method: "PUT", body: { status } });
 
-/** Replaces the logo or banner (multipart field "image"). */
-export function uploadStoreImage(kind: StoreImageKind, file: File) {
+/**
+ * Replaces the logo or banner: a file (multipart field "image") or an https:// address
+ * (image_url, DECISIONS S10) that KACHI downloads; a bad address is a 422 on image_url.
+ */
+export function uploadStoreImage(kind: StoreImageKind, image: File | string) {
+  if (typeof image === "string") {
+    return api<OwnStore>(`/vendor/store/${kind}`, { method: "POST", body: { image_url: image } });
+  }
   const body = new FormData();
-  body.append("image", file);
+  body.append("image", image);
   return api<OwnStore>(`/vendor/store/${kind}`, { method: "POST", body });
 }
 

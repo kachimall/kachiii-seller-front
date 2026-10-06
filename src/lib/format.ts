@@ -13,6 +13,15 @@ export function formatMoney(amount: string | null | undefined, currency = "AED")
   return `${currency} ${amount}`;
 }
 
+/** "224.10" -> "+ AED 224.10", "-221.09" -> "− AED 221.09"; zero has no sign. */
+export function formatSignedMoney(amount: string | null | undefined, currency = "AED"): string {
+  if (amount === null || amount === undefined || amount === "") return "—";
+  const negative = amount.startsWith("-");
+  const digits = negative ? amount.slice(1) : amount;
+  if (/^0*(\.0*)?$/.test(digits)) return formatMoney(digits, currency);
+  return `${negative ? "−" : "+"} ${formatMoney(digits, currency)}`;
+}
+
 export function formatPriceRange(range: { min: string | null; max: string | null }, currency: string): string {
   if (!range.min) return "—";
   return range.min === range.max || !range.max

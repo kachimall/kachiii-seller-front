@@ -7,7 +7,9 @@ import {
   ShoppingCartIcon,
   StoreIcon,
   Undo2Icon,
+  WalletIcon,
 } from "lucide-react";
+import { EARNINGS_PERMISSIONS } from "@/lib/api/earnings";
 
 export interface NavItem {
   href: string;
@@ -40,6 +42,10 @@ export const NAV: NavGroup[] = [
       { href: "/orders", label: "Orders", icon: ShoppingCartIcon, permission: "orders.view" },
       { href: "/returns", label: "Returns", icon: Undo2Icon, permission: "orders.view" },
     ],
+  },
+  {
+    label: "Finance",
+    items: [{ href: "/earnings", label: "Earnings", icon: WalletIcon, permission: EARNINGS_PERMISSIONS }],
   },
   {
     label: "Store",

@@ -1,9 +1,10 @@
 "use client";
 
 // Adapted from components/common/image-field.tsx: the banner has its own pixel bounds and a wide preview.
-import { ImageIcon, Loader2Icon, Trash2Icon, UploadIcon } from "lucide-react";
+import { ImageIcon, LinkIcon, Loader2Icon, Trash2Icon, UploadIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { ImageUrlDialog } from "@/components/common/image-url-dialog";
 import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
@@ -12,7 +13,10 @@ import { STORE_IMAGE_RULES, type StoreImageKind } from "@/types/store";
 const TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 2 * 1024 * 1024;
 
-/** The store's logo or banner with upload / remove buttons (StoreBrandingImageRequest rules). */
+/**
+ * The store's logo or banner with upload / remove buttons (StoreBrandingImageRequest rules). The
+ * picture can also come from its web address (DECISIONS S10); onUpload then gets the address.
+ */
 export function BrandingField({
   kind,
   url,
@@ -23,11 +27,12 @@ export function BrandingField({
   kind: StoreImageKind;
   url: string | null;
   disabled?: boolean;
-  onUpload: (file: File) => Promise<void>;
+  onUpload: (image: File | string) => Promise<void>;
   onRemove: () => Promise<void>;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<"upload" | "remove" | null>(null);
+  const [byUrl, setByUrl] = useState(false);
   const rules = STORE_IMAGE_RULES[kind];
   const label = kind === "logo" ? "Logo" : "Banner";
 
@@ -89,6 +94,10 @@ export function BrandingField({
           {pending === "upload" ? <Loader2Icon className="animate-spin" /> : <UploadIcon />}
           {url ? "Replace" : "Upload"}
         </Button>
+        <Button type="button" variant="outline" size="sm" disabled={disabled || pending !== null} onClick={() => setByUrl(true)}>
+          <LinkIcon />
+          From a web address
+        </Button>
         {url && (
           <Button
             type="button"
@@ -103,6 +112,18 @@ export function BrandingField({
         )}
       </div>
       <p className="text-xs text-muted-foreground">{hint(kind)}</p>
+      <ImageUrlDialog
+        open={byUrl}
+        onOpenChange={setByUrl}
+        title={`${url ? "Replace" : "Add"} the ${kind} from a web address`}
+        description="Paste the https:// address of a picture already online, e.g. on your own website. KACHI downloads it and checks it like an upload."
+        hint={hint(kind)}
+        onSubmit={async (address) => {
+          // The dialog shows the API's error on its field; only success is toasted here.
+          await onUpload(address);
+          toast.success(`${label} ${url ? "replaced" : "added"}.`);
+        }}
+      />
     </div>
   );
 }

@@ -253,7 +253,11 @@ function OrderView({
             </dl>
             <p className="mt-3 text-xs text-muted-foreground">
               A store voucher comes out of your earnings; a KACHI voucher never does.
-              {pkg ? ` The buyer paid ${money(pkg.fee)} for delivery.` : ""}
+              {pkg ? ` The buyer paid ${money(pkg.fee)} for delivery.` : ""}{" "}
+              <Link href="/earnings" className="underline">
+                Earnings
+              </Link>{" "}
+              records them once the package is delivered, and takes back returned items and refunds charged to you.
             </p>
           </Section>
 
