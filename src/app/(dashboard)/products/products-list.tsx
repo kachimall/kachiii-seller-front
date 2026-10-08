@@ -102,6 +102,7 @@ export function ProductsList() {
                 <TableHead>Product</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Stock</TableHead>
+                <TableHead>Sales</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Updated</TableHead>
               </TableRow>
@@ -127,6 +128,16 @@ export function ProductsList() {
                     ) : (
                       <span className="text-destructive">Out of stock</span>
                     )}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <span className="grid gap-0.5">
+                      <span>{product.sold_count === undefined ? "—" : `${product.sold_count} sold`}</span>
+                      {product.rating?.average && (
+                        <span className="text-xs text-muted-foreground">
+                          ★ {product.rating.average} ({product.rating.count})
+                        </span>
+                      )}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <span className="flex flex-col gap-1">

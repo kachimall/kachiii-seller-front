@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type ChangeEvent, type ReactNode } from "react";
 import { Controller, useFieldArray, useForm, useWatch, type Path, type UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
+import { Turnstile, useTurnstile } from "@/components/common/turnstile";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field } from "@/components/ui/field";
@@ -31,6 +32,7 @@ import {
   type RegisterValues,
 } from "@/lib/schemas/onboarding";
 import { useAuth } from "@/store/auth";
+import { AgreementDialog } from "./agreement-dialog";
 
 type Form = UseFormReturn<RegisterValues>;
 
@@ -83,6 +85,7 @@ export function RegisterForm() {
 
   const form = useForm<RegisterValues>({ resolver: zodResolver(registerSchema), defaultValues: DEFAULTS });
   const { errors, isSubmitting } = form.formState;
+  const robot = useTurnstile();
 
   // Already signed in: the guard decides between the dashboard and the application.
   useEffect(() => {
@@ -91,6 +94,10 @@ export function RegisterForm() {
 
   const submit = form.handleSubmit(async (values) => {
     setFormError(null);
+    if (robot.enabled && !robot.token) {
+      setFormError("Confirm you are not a robot, then try again.");
+      return;
+    }
     try {
       const result = await registerVendor(
         {
@@ -110,6 +117,7 @@ export function RegisterForm() {
           contact_email: nullable(values.contact_email),
           // The schema refuses an empty file, so every row has one here.
           documents: values.documents.map((doc) => ({ type: doc.type, file: doc.file as File })),
+          turnstile_token: robot.token,
         },
         DEVICE_NAME,
       );
@@ -123,6 +131,8 @@ export function RegisterForm() {
       toast.success(`Application received. We sent a verification link to ${result.user.email}.`);
       router.replace("/application");
     } catch (error) {
+      // Cloudflare accepts each token once: the next try needs a fresh check.
+      robot.reset();
       showServerErrors(error, form, setFormError);
     }
   });
@@ -173,6 +183,8 @@ export function RegisterForm() {
       <BusinessFields form={form} />
       <DocumentRows form={form} />
 
+      <Turnstile action="vendor-register" nonce={robot.nonce} onToken={robot.setToken} />
+
       <Button type="submit" size="lg" disabled={isSubmitting}>
         {isSubmitting && <Loader2Icon className="animate-spin" />}
         Submit application
@@ -181,6 +193,9 @@ export function RegisterForm() {
         KACHI reviews your application once your email is verified. If it is approved, you accept the vendor agreement
         and your store opens.
       </p>
+      <div className="-mt-4 flex justify-center">
+        <AgreementDialog />
+      </div>
     </form>
   );
 }

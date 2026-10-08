@@ -3,10 +3,14 @@ import type { LoginResult, TokenResult, TwoFactorSetup, TwoFactorStatus, User } 
 
 export const DEVICE_NAME = "kachi-seller-centre";
 
-export function login(email: string, password: string) {
+/**
+ * Signs in. turnstileToken is Cloudflare's bot check, needed while the backend has it on. Repeated
+ * failures lock the account for a while: 429 with a message saying how long.
+ */
+export function login(email: string, password: string, turnstileToken?: string | null) {
   return api<LoginResult>("/auth/login", {
     method: "POST",
-    body: { email, password, device_name: DEVICE_NAME },
+    body: { email, password, device_name: DEVICE_NAME, turnstile_token: turnstileToken ?? undefined },
     skipAuthHandling: true,
   });
 }

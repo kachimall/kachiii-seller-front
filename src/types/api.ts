@@ -259,6 +259,10 @@ export interface Product {
   currency_code: string;
   price_range: { min: Money | null; max: Money | null };
   in_stock: boolean;
+  /** Its visible reviews; average null until the first one. */
+  rating?: { average: string | null; count: number };
+  /** Units sold in orders that went ahead, recounted every few minutes. */
+  sold_count?: number;
   thumbnail_url: string | null;
   store: { id: Ulid; name: string; slug: string };
   description?: string;
@@ -509,6 +513,8 @@ export interface Store {
   contact_phone: string | null;
   policies: string | null;
   joined_at: IsoDate | null;
+  /** The average of its rated products' ratings, and their number of reviews. */
+  rating?: { average: string | null; count: number };
   products_count?: number;
   status?: StoreStatus;
   status_reason?: string | null;

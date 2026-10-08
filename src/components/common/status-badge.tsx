@@ -52,6 +52,15 @@ const STATUS_TONES: Record<string, Tone> = {
   ended: "neutral",
   withdrawn: "neutral",
   off: "neutral",
+  // Ads and payouts.
+  live: "success",
+  pending_approval: "warning",
+  expired: "neutral",
+  stopped: "danger",
+  released: "info",
+  completed: "success",
+  settled: "success",
+  none: "neutral",
 };
 
 export function StatusBadge({ status, label, tone, className }: { status: string | null | undefined; label?: string; tone?: Tone; className?: string }) {

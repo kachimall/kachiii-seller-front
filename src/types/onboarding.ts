@@ -48,6 +48,8 @@ export interface RegisterInput {
   contact_phone: string;
   contact_email: string | null;
   documents: RegisterDocument[];
+  /** Cloudflare Turnstile's token, needed while the backend has bot protection on. */
+  turnstile_token?: string | null;
 }
 
 /**

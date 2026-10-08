@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Turnstile, useTurnstile } from "@/components/common/turnstile";
 import { NOT_VENDOR_MESSAGE } from "@/components/layout/auth-guard";
 import { login, logout, me, twoFactorChallenge } from "@/lib/api/auth";
 import { ApiError, errorMessage } from "@/lib/api/client";
@@ -102,25 +103,41 @@ function CredentialsStep({
 }) {
   const form = useForm<LoginValues>({ resolver: zodResolver(loginSchema), defaultValues: { email: "", password: "" } });
   const { errors, isSubmitting } = form.formState;
+  const robot = useTurnstile();
 
   const submit = form.handleSubmit(async (values) => {
     onError(null);
+    if (robot.enabled && !robot.token) {
+      onError("Confirm you are not a robot, then try again.");
+      return;
+    }
+    let result;
     try {
-      const result = await login(values.email, values.password);
-      if ("two_factor" in result) onChallenge(result.challenge_token);
-      else await onDone(result);
+      result = await login(values.email, values.password, robot.token);
     } catch (error) {
+      // Cloudflare accepts each token once: a refused sign-in needs a fresh check.
+      robot.reset();
       if (error instanceof ApiError && error.status === 422) {
         const email = error.firstError("email");
         const password = error.firstError("password");
         if (email) form.setError("email", { message: email });
         if (password) form.setError("password", { message: password });
-        if (!email && !password) onError(error.message);
+        if (!email && !password) onError(error.firstError("turnstile_token") ?? error.message);
       } else {
-        // 403: inactive or suspended account; 429: too many attempts.
-        onError(errorMessage(error));
+        // 403: inactive or suspended account; 429: the account is locked after repeated failed
+        // sign-ins (the message says for how long), or too many attempts from this address.
+        onError(
+          error instanceof ApiError && error.status === 429 && error.message === "Too Many Attempts."
+            ? "Too many sign-in attempts. Wait a minute and try again."
+            : errorMessage(error),
+        );
       }
+      return;
     }
+    // Used up either way; a later attempt (e.g. after "not a vendor account") needs a new one.
+    robot.reset();
+    if ("two_factor" in result) onChallenge(result.challenge_token);
+    else await onDone(result);
   });
 
   return (
@@ -153,6 +170,7 @@ function CredentialsStep({
           {...form.register("password")}
         />
       </Field>
+      <Turnstile action="login" nonce={robot.nonce} onToken={robot.setToken} />
       <Button type="submit" size="lg" disabled={isSubmitting}>
         {isSubmitting && <Loader2Icon className="animate-spin" />}
         Sign in

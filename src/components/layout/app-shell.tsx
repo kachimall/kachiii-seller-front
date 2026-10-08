@@ -19,9 +19,11 @@ import { logout } from "@/lib/api/auth";
 import { visibleNav } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { useAuth, useCan } from "@/store/auth";
+import { useUnread, useUnreadPolling } from "@/store/unread";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  useUnreadPolling();
 
   return (
     <div className="flex min-h-full">
@@ -61,6 +63,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const can = useCan();
   const groups = visibleNav(can);
+  const unread = useUnread((s) => s.count);
 
   return (
     <>
@@ -89,7 +92,15 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                       )}
                     >
                       <item.icon className="size-4 shrink-0" />
-                      {item.label}
+                      <span className="flex-1">{item.label}</span>
+                      {item.badge === "unread-messages" && unread ? (
+                        <span
+                          className="min-w-5 rounded-full bg-primary px-1.5 text-center text-xs leading-5 font-semibold text-primary-foreground"
+                          aria-label={`${unread} unread`}
+                        >
+                          {unread > 99 ? "99+" : unread}
+                        </span>
+                      ) : null}
                     </Link>
                   </li>
                 );

@@ -6,9 +6,11 @@ import {
   ChevronRightIcon,
   ClipboardCheckIcon,
   type LucideIcon,
+  MessageSquareIcon,
   MoonIcon,
   PackageIcon,
   PackageXIcon,
+  StarIcon,
   StoreIcon,
   TruckIcon,
   Undo2Icon,
@@ -21,7 +23,9 @@ import { useApi } from "@/hooks/use-api";
 import { apiList, errorMessage } from "@/lib/api/client";
 import { EARNINGS_PERMISSIONS, getEarningsSummary } from "@/lib/api/earnings";
 import { listOrders } from "@/lib/api/orders";
+import { listConversations, MESSAGES_VIEW_PERMISSION } from "@/lib/api/messages";
 import { listReturns } from "@/lib/api/returns";
+import { listReviews } from "@/lib/api/reviews";
 import { getStore } from "@/lib/api/store";
 import { formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -29,9 +33,11 @@ import { useAuth, useCan } from "@/store/auth";
 import type { LowStockItem, ReturnRequest, SellerOrder } from "@/types/sales";
 import { Deadline } from "./orders/_components/deadline";
 import { Notice } from "./orders/_components/notice";
+import { Performance } from "./performance";
 
-// There is no stats endpoint: each count is meta.total of a filtered list. The deadlines read up
-// to 100 rows (the lists come newest first) and keep the soonest.
+// The cards are what needs the store now: each count is meta.total of a filtered list, and the
+// deadlines read up to 100 rows (the lists come newest first) and keep the soonest. The figures
+// over a period come from GET /vendor/dashboard (<Performance>).
 const SAMPLE = 100;
 
 export function Overview() {
@@ -81,9 +87,13 @@ export function Overview() {
             <ReturnsCard />
           </>
         )}
+        {can(MESSAGES_VIEW_PERMISSION) && <MessagesCard />}
+        <ReviewsCard />
         {can("inventory.manage") && <LowStockCard />}
         {can(EARNINGS_PERMISSIONS) && <EarningsCard />}
       </div>
+
+      <Performance />
     </>
   );
 }
@@ -207,6 +217,45 @@ function ReturnsCard() {
           Answer the first by <Deadline at={next} />
         </>
       ) : null}
+    </StatCard>
+  );
+}
+
+function MessagesCard() {
+  const { data, error } = useApi("overview:messages", () => listConversations({ unread: true, per_page: 1 }));
+  const unread = data?.meta.unread_total;
+  const conversations = data ? (data.meta.total ?? data.data.length) : undefined;
+
+  return (
+    <StatCard
+      href="/messages"
+      icon={MessageSquareIcon}
+      title="Unread messages"
+      value={unread ?? "…"}
+      tone={unread ? "attention" : undefined}
+      error={error}
+    >
+      {unread === 0
+        ? "No buyer is waiting for an answer."
+        : conversations
+          ? `In ${conversations} conversation${conversations === 1 ? "" : "s"}.`
+          : null}
+    </StatCard>
+  );
+}
+
+function ReviewsCard() {
+  const { data, error } = useApi("overview:reviews", () => listReviews({ unreplied: true, per_page: 1 }));
+  const total = data ? (data.meta.total ?? data.data.length) : undefined;
+  const latest = data?.data[0];
+
+  return (
+    <StatCard href="/reviews?unreplied=1" icon={StarIcon} title="Reviews to answer" value={total ?? "…"} error={error}>
+      {total === 0
+        ? "Every review has your reply."
+        : latest
+          ? `Latest: ${latest.rating}★ on ${latest.product.name}`
+          : null}
     </StatCard>
   );
 }

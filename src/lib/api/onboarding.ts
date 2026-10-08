@@ -1,5 +1,5 @@
-import { api, openFile } from "@/lib/api/client";
-import type { VendorConsent, VendorDocument, VendorDocumentType } from "@/types/api";
+import { api, openFile, shopApi } from "@/lib/api/client";
+import type { VendorAgreement, VendorConsent, VendorDocument, VendorDocumentType } from "@/types/api";
 import type {
   AcceptAgreementInput,
   AgreementView,
@@ -28,6 +28,7 @@ export function register(input: RegisterInput, deviceName: string) {
     tax_id: input.is_vat_registered ? input.tax_id : null,
     contact_phone: input.contact_phone,
     contact_email: input.contact_email,
+    turnstile_token: input.turnstile_token ?? null,
   };
   for (const [key, value] of Object.entries(text)) {
     if (value !== null && value !== "") form.append(key, value);
@@ -78,3 +79,9 @@ export const acceptAgreement = (body: AcceptAgreementInput) =>
 
 /** The signed PDF; 404 until a queued job has written it (consent.copy_ready). */
 export const openAgreementCopy = () => openFile("/vendor/agreement/copy");
+
+/**
+ * The vendor agreement in force, from the shop portal's public catalogue (no sign-in): for anyone
+ * thinking of selling, before they register. 404 while none is published.
+ */
+export const getPublicAgreement = () => shopApi<VendorAgreement>("/vendor-agreement");

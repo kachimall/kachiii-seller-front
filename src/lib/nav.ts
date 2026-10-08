@@ -1,15 +1,22 @@
 import {
+  BanknoteIcon,
   FileTextIcon,
+  MegaphoneIcon,
+  MessageSquareIcon,
+  MessageSquareTextIcon,
   LayoutDashboardIcon,
   type LucideIcon,
   PackageIcon,
   PackageXIcon,
   ShoppingCartIcon,
+  StarIcon,
   StoreIcon,
   Undo2Icon,
   WalletIcon,
 } from "lucide-react";
+import { ADS_PERMISSION } from "@/lib/api/ads";
 import { EARNINGS_PERMISSIONS } from "@/lib/api/earnings";
+import { MESSAGE_SETTINGS_PERMISSION, MESSAGES_VIEW_PERMISSION } from "@/lib/api/messages";
 
 export interface NavItem {
   href: string;
@@ -17,6 +24,8 @@ export interface NavItem {
   icon: LucideIcon;
   /** Shown when the user holds any of these permissions; none means everyone. */
   permission?: string | string[];
+  /** A live count shown beside the label. */
+  badge?: "unread-messages";
 }
 
 export interface NavGroup {
@@ -44,13 +53,40 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    label: "Customers",
+    items: [
+      {
+        href: "/messages",
+        label: "Messages",
+        icon: MessageSquareIcon,
+        permission: MESSAGES_VIEW_PERMISSION,
+        badge: "unread-messages",
+      },
+      // Any vendor account may read its reviews; replying needs products.manage.
+      { href: "/reviews", label: "Reviews", icon: StarIcon },
+    ],
+  },
+  {
+    label: "Marketing",
+    items: [{ href: "/ads", label: "Ads", icon: MegaphoneIcon, permission: ADS_PERMISSION }],
+  },
+  {
     label: "Finance",
-    items: [{ href: "/earnings", label: "Earnings", icon: WalletIcon, permission: EARNINGS_PERMISSIONS }],
+    items: [
+      { href: "/earnings", label: "Earnings", icon: WalletIcon, permission: EARNINGS_PERMISSIONS },
+      { href: "/payouts", label: "Payouts", icon: BanknoteIcon, permission: EARNINGS_PERMISSIONS },
+    ],
   },
   {
     label: "Store",
     items: [
       { href: "/store", label: "Store profile", icon: StoreIcon, permission: "stores.manage" },
+      {
+        href: "/message-settings",
+        label: "Message settings",
+        icon: MessageSquareTextIcon,
+        permission: MESSAGE_SETTINGS_PERMISSION,
+      },
       { href: "/application", label: "Application & agreement", icon: FileTextIcon },
     ],
   },

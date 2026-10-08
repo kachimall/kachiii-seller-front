@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CircleCheckIcon, HourglassIcon, type LucideIcon, PercentIcon, WalletIcon } from "lucide-react";
+import { BanknoteIcon, CircleCheckIcon, HandCoinsIcon, HourglassIcon, type LucideIcon, WalletIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { FilterSelect, ListPanel } from "@/components/common/list-panel";
 import { PageHeader } from "@/components/common/page-header";
@@ -15,7 +15,15 @@ import { EARNINGS_PERMISSIONS, getEarningsSummary, listEarnings } from "@/lib/ap
 import { formatDate, formatDateTime, formatMoney, formatSignedMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useCan } from "@/store/auth";
-import { LEDGER_ENTRY_TYPES, LEDGER_STATUSES, type LedgerEntry, type LedgerEntryStatus } from "@/types/earnings";
+import { Section } from "@/components/common/section";
+import {
+  LEDGER_ENTRY_TYPES,
+  LEDGER_STATUSES,
+  PAYMENT_METHOD_OPTIONS,
+  type LedgerEntry,
+  type LedgerEntryStatus,
+} from "@/types/earnings";
+import type { PaymentMethod } from "@/types/api";
 
 const STATUS_LABELS = Object.fromEntries(LEDGER_STATUSES.map((s) => [s.value, s.label]));
 
@@ -24,9 +32,11 @@ export function EarningsPage() {
   const allowed = can(EARNINGS_PERMISSIONS);
   const query = useQueryState();
   const status = query.get("status") as LedgerEntryStatus | "";
+  const paymentMethod = query.get("payment_method") as PaymentMethod | "";
   const { data, error, loading, reload } = useApi(allowed ? `earnings?${query.key}` : null, () =>
-    listEarnings({ status, page: query.page }),
+    listEarnings({ status, payment_method: paymentMethod, page: query.page }),
   );
+  const filtered = Boolean(status || paymentMethod);
 
   if (!allowed) return <ForbiddenState />;
 
@@ -34,7 +44,7 @@ export function EarningsPage() {
     <>
       <PageHeader
         title="Earnings"
-        description="What your store is owed after KACHI's commission. A sale is recorded when its package is delivered, and returns and refunds charged to you are taken back from it."
+        description="What your store is owed after KACHI's commission. A sale is recorded when its package is delivered, and returns and refunds charged to you are taken back from it. Each week, what is available goes into a payout."
       />
 
       <Summary />
@@ -47,11 +57,20 @@ export function EarningsPage() {
         onRetry={reload}
         onPage={(page) => query.set({ page })}
         empty={{
-          title: status ? "No entries found" : "No earnings yet",
-          description: status ? "Try another status." : "Each delivered package records a sale here.",
+          title: filtered ? "No entries found" : "No earnings yet",
+          description: filtered ? "Try other filters." : "Each delivered package records a sale here.",
         }}
         filters={
-          <FilterSelect label="Statuses" value={status} onChange={(next) => query.set({ status: next })} options={LEDGER_STATUSES} />
+          <>
+            <FilterSelect label="Statuses" value={status} onChange={(next) => query.set({ status: next })} options={LEDGER_STATUSES} />
+            <FilterSelect
+              label="Payment methods"
+              value={paymentMethod}
+              onChange={(next) => query.set({ payment_method: next })}
+              options={PAYMENT_METHOD_OPTIONS}
+              className="sm:w-52"
+            />
+          </>
         }
       >
         {(rows) => (
@@ -100,10 +119,13 @@ function EntryRow({ entry }: { entry: LedgerEntry }) {
           <StatusBadge
             status={entry.status}
             label={STATUS_LABELS[entry.status]}
-            tone={entry.status === "available" ? "success" : "warning"}
+            tone={entry.status === "available" ? "success" : entry.status === "released" ? "info" : "warning"}
           />
           {entry.status === "pending" && (
             <span className="text-xs whitespace-nowrap text-muted-foreground">From {formatDate(entry.available_at)}</span>
+          )}
+          {entry.status === "released" && entry.payout_number && (
+            <span className="text-xs whitespace-nowrap text-muted-foreground">In {entry.payout_number}</span>
           )}
         </span>
       </TableCell>
@@ -135,20 +157,57 @@ function Summary() {
 
   if (error) return <p className="mb-6 text-sm text-destructive">{errorMessage(error)}</p>;
 
+  const cod = data?.cash_on_delivery;
+
   return (
-    <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <Figure icon={CircleCheckIcon} title="Available" value={data?.available} tone="success">
-        Past the return period: counts towards your next payout.
-      </Figure>
-      <Figure icon={HourglassIcon} title="In the return period" value={data?.pending} tone="attention">
-        Sales from the last few days. They become available once the buyer can no longer return them.
-      </Figure>
-      <Figure icon={WalletIcon} title="Earned in total" value={data?.earned}>
-        Everything your store has earned after commission, less returns and refunds charged to you.
-      </Figure>
-      <Figure icon={PercentIcon} title="KACHI commission" value={data?.commission}>
-        KACHI&apos;s commission on your sales, less the commission on returned items.
-      </Figure>
+    <div className="mb-6 grid gap-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Figure icon={CircleCheckIcon} title="Available" value={data?.available} tone="success">
+          Past the return period: counts towards your next weekly payout.
+        </Figure>
+        <Figure icon={HourglassIcon} title="In the return period" value={data?.pending} tone="attention">
+          Sales from the last few days. They become available once the buyer can no longer return them.
+        </Figure>
+        <Figure icon={BanknoteIcon} title="Released in payouts" value={data?.released}>
+          Already in your weekly payouts. <Link href="/payouts" className="text-secondary hover:underline">See payouts</Link>
+        </Figure>
+        <Figure icon={WalletIcon} title="Earned in total" value={data?.earned}>
+          After KACHI&apos;s commission ({data ? formatMoney(data.commission) : "…"}), less returns and refunds charged to
+          you.
+        </Figure>
+      </div>
+
+      <Section
+        title={
+          <span className="flex items-center gap-2">
+            <HandCoinsIcon className="size-4 text-muted-foreground" /> Cash on delivery
+          </span>
+        }
+        actions={
+          <Link href="/earnings?payment_method=cash_on_delivery" className="text-sm text-secondary hover:underline">
+            Show these orders
+          </Link>
+        }
+      >
+        <p className="mb-4 text-sm text-muted-foreground">
+          Your share of the orders buyers paid in cash. The courier collects the cash and KACHI pays your share with your
+          weekly payouts, apart from what noqodi pays for online orders. Included in the figures above.
+        </p>
+        <dl className="grid gap-4 sm:grid-cols-3">
+          <CodFigure label="Earned" value={cod?.earned} />
+          <CodFigure label="Paid by KACHI" value={cod?.paid} />
+          <CodFigure label="Still due from KACHI" value={cod?.due} />
+        </dl>
+      </Section>
+    </div>
+  );
+}
+
+function CodFigure({ label, value }: { label: string; value: string | undefined }) {
+  return (
+    <div>
+      <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</dt>
+      <dd className="mt-1 font-heading text-headline-sm">{value === undefined ? "…" : formatMoney(value)}</dd>
     </div>
   );
 }
